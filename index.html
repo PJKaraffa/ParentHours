@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Family Service Hours Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="toast" class="toast hidden"></div>
+
+  <section id="loginView" class="login-shell">
+    <div class="login-card">
+      <div class="brand-mark">FH</div>
+      <h1>Family Service Hours</h1>
+      <p class="subtitle">Track, submit, and authorize required family service hours.</p>
+
+      <label for="loginEmail">Email</label>
+      <input id="loginEmail" type="email" placeholder="name@district.org" autocomplete="email" />
+
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+
+      <button id="loginButton" class="primary full-width">Sign In</button>
+      <p id="loginMessage" class="form-message"></p>
+    </div>
+  </section>
+
+  <section id="appView" class="hidden">
+    <header class="topbar">
+      <div>
+        <h1>Family Service Hours Tracker</h1>
+        <p id="welcomeText">Welcome</p>
+      </div>
+      <div class="topbar-actions">
+        <span id="roleBadge" class="badge">User</span>
+        <button id="logoutButton" class="secondary">Logout</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="dashboardTab">Dashboard</button>
+      <button class="tab" data-tab="submitTab">Submit Hours</button>
+      <button class="tab" data-tab="myEntriesTab">My Entries</button>
+      <button id="adminTabButton" class="tab hidden" data-tab="adminTab">Admin Authorization</button>
+      <button id="familiesTabButton" class="tab hidden" data-tab="familiesTab">Families</button>
+    </nav>
+
+    <main class="page-shell">
+      <section id="dashboardTab" class="tab-panel">
+        <div class="page-heading">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Each family is required to complete 36 approved service hours.</p>
+          </div>
+          <button id="refreshDashboardButton" class="secondary">Refresh</button>
+        </div>
+
+        <div id="summaryCards" class="summary-grid"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Family Hour Progress</h3>
+            <div class="filters compact">
+              <select id="dashboardSchoolFilter">
+                <option value="">All Schools</option>
+              </select>
+              <input id="dashboardSearch" type="search" placeholder="Search Family ID or student" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>School</th>
+                  <th>Family ID</th>
+                  <th>Student</th>
+                  <th>Grade</th>
+                  <th>Approved</th>
+                  <th>Pending</th>
+                  <th>Hours Left</th>
+                  <th>Progress</th>
+                </tr>
+              </thead>
+              <tbody id="progressTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="submitTab" class="tab-panel hidden">
+        <div class="page-heading">
+          <div>
+            <h2>Submit Service Hours</h2>
+            <p>Entries remain pending until authorized by an administrator.</p>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <div class="form-grid">
+            <div>
+              <label for="entryFamily">Family</label>
+              <select id="entryFamily">
+                <option value="">Select family</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="entryDate">Service Date</label>
+              <input id="entryDate" type="date" />
+            </div>
+
+            <div>
+              <label for="entryHours">Hours</label>
+              <input id="entryHours" type="number" min="0.25" max="36" step="0.25" placeholder="0.00" />
+            </div>
+
+            <div>
+              <label for="entryActivity">Service Activity</label>
+              <input id="entryActivity" type="text" maxlength="150" placeholder="Example: School event volunteer" />
+            </div>
+
+            <div class="full-span">
+              <label for="entryNotes">Notes</label>
+              <textarea id="entryNotes" rows="4" maxlength="1000" placeholder="Describe the service provided"></textarea>
+            </div>
+          </div>
+
+          <button id="submitHoursButton" class="primary">Submit Hours for Authorization</button>
+          <p id="entryMessage" class="form-message"></p>
+        </div>
+      </section>
+
+      <section id="myEntriesTab" class="tab-panel hidden">
+        <div class="page-heading">
+          <div>
+            <h2>My Submitted Entries</h2>
+            <p>Review the approval status of your submitted service hours.</p>
+          </div>
+          <button id="refreshMyEntriesButton" class="secondary">Refresh</button>
+        </div>
+
+        <div class="card">
+          <div class="filters">
+            <select id="myStatusFilter">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <input id="myEntrySearch" type="search" placeholder="Search family, student, or activity" />
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>School</th>
+                  <th>Family ID</th>
+                  <th>Student</th>
+                  <th>Activity</th>
+                  <th>Hours</th>
+                  <th>Status</th>
+                  <th>Admin Note</th>
+                </tr>
+              </thead>
+              <tbody id="myEntriesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminTab" class="tab-panel hidden">
+        <div class="page-heading">
+          <div>
+            <h2>Admin Authorization</h2>
+            <p>Approve or reject pending family service hour submissions.</p>
+          </div>
+          <div class="button-row">
+            <button id="exportAdminButton" class="secondary">Export CSV</button>
+            <button id="refreshAdminButton" class="secondary">Refresh</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="filters">
+            <select id="adminStatusFilter">
+              <option value="pending">Pending</option>
+              <option value="">All Statuses</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select id="adminSchoolFilter">
+              <option value="">All Schools</option>
+            </select>
+            <input id="adminSearch" type="search" placeholder="Search Family ID, student, or submitter" />
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>School</th>
+                  <th>Family ID</th>
+                  <th>Student</th>
+                  <th>Grade</th>
+                  <th>Activity</th>
+                  <th>Hours</th>
+                  <th>Submitted By</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminEntriesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="familiesTab" class="tab-panel hidden">
+        <div class="page-heading">
+          <div>
+            <h2>Family Records</h2>
+            <p>Add and maintain family/student records.</p>
+          </div>
+          <button id="exportFamiliesButton" class="secondary">Export CSV</button>
+        </div>
+
+        <div class="card form-card">
+          <h3>Add Family Record</h3>
+          <div class="form-grid">
+            <div>
+              <label for="familySchool">School</label>
+              <select id="familySchool">
+                <option value="">Select school</option>
+              </select>
+            </div>
+            <div>
+              <label for="familyId">Family ID</label>
+              <input id="familyId" type="text" maxlength="50" placeholder="Example: FAM-10025" />
+            </div>
+            <div>
+              <label for="studentName">Student Name</label>
+              <input id="studentName" type="text" maxlength="150" placeholder="First and last name" />
+            </div>
+            <div>
+              <label for="studentGrade">Grade</label>
+              <select id="studentGrade">
+                <option value="">Select grade</option>
+                <option>PK</option><option>K</option><option>1</option><option>2</option>
+                <option>3</option><option>4</option><option>5</option><option>6</option>
+                <option>7</option><option>8</option><option>9</option><option>10</option>
+                <option>11</option><option>12</option>
+              </select>
+            </div>
+          </div>
+          <button id="addFamilyButton" class="primary">Add Family</button>
+          <p id="familyMessage" class="form-message"></p>
+        </div>
+
+        <div class="card">
+          <div class="filters">
+            <select id="familySchoolFilter">
+              <option value="">All Schools</option>
+            </select>
+            <input id="familySearch" type="search" placeholder="Search Family ID or student" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>School</th>
+                  <th>Family ID</th>
+                  <th>Student</th>
+                  <th>Grade</th>
+                  <th>Required</th>
+                  <th>Approved</th>
+                  <th>Hours Left</th>
+                  <th>Active</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="familiesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="authorizationModal" class="modal hidden">
+    <div class="modal-card">
+      <h3 id="modalTitle">Authorize Hours</h3>
+      <p id="modalSummary"></p>
+      <label for="authorizationNote">Administrator Note</label>
+      <textarea id="authorizationNote" rows="4" placeholder="Optional for approval; recommended for rejection"></textarea>
+      <div class="modal-actions">
+        <button id="cancelAuthorizationButton" class="secondary">Cancel</button>
+        <button id="confirmAuthorizationButton" class="primary">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
