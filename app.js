@@ -2,8 +2,8 @@
 // FAMILY SERVICE HOURS TRACKER
 // Replace the two values below with your Supabase project data.
 // ==========================================================
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://judrwlhoridaetsingnz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_Zkqj0_zHVTaiZG5mo37Azg_NzYz6jom";
 
 const REQUIRED_HOURS = 36;
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
